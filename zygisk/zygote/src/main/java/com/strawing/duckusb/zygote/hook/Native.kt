@@ -11,4 +11,6 @@ object Native {
     external fun deoptimizeMethod(target: Executable): Boolean
 
     external fun installPropHooks(names: Array<String>, values: Array<String>): Int
+
+    external fun installAdbCover(): Int
 }
