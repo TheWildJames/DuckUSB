@@ -339,6 +339,33 @@ class MainActivity : AppCompatActivity() {
         })
         col.addView(ui.thinDivider())
         col.addView(ui.toggleRow(
+            DuckUi.Icons.usb, "Cover the adbd socket inode",
+            "/dev/socket/adbd answers ENOENT inside scoped apps. init unlinks that socket before it publishes stopped, so its inode alone proves adbd is alive; a denied stat (EACCES) is still read as present. Only meaningful while 'Mask the USB config property' is on.",
+            config.coverAdbInode,
+        ) {
+            config.coverAdbInode = it
+            save()
+        })
+        col.addView(ui.thinDivider())
+        col.addView(ui.toggleRow(
+            DuckUi.Icons.query, "Cover the socket directory listing",
+            "Drops the adbd entry from /dev/socket when a scoped app lists it. A name that cannot be stat()ed reads as unknown rather than absent, so this pairs with the inode switch.",
+            config.coverAdbListing,
+        ) {
+            config.coverAdbListing = it
+            save()
+        })
+        col.addView(ui.thinDivider())
+        col.addView(ui.toggleRow(
+            DuckUi.Icons.tag, "Cover the JDWP control socket",
+            "connect() to the abstract @jdwp-control listener answers ECONNREFUSED. adbd binds that listener itself, so a successful connect or a SELinux denial both read as alive.",
+            config.coverAdbJdwp,
+        ) {
+            config.coverAdbJdwp = it
+            save()
+        })
+        col.addView(ui.thinDivider())
+        col.addView(ui.toggleRow(
             DuckUi.Icons.allApps, "Mask the USB function list",
             "sys.usb.config reads mtp inside scoped apps only, via a libc read hook. It is the one USB property that cannot be masked globally, because init reconfigures the gadget from it. The others are already masked for every app by the USB config property switch. COST: this injects the scoped apps and leaves an inline patch in their libc, which memory scanners can see. Leave it off unless something reads sys.usb.config directly.",
             config.spoofUsbState,

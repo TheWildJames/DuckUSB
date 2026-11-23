@@ -14,6 +14,9 @@ data class DuckConfig(
     var hookSystemServer: Boolean = false,
     var frameworkMode: Boolean = false,
     var frameworkAllApps: Boolean = false,
+    var coverAdbInode: Boolean = true,
+    var coverAdbListing: Boolean = true,
+    var coverAdbJdwp: Boolean = true,
     var targets: MutableSet<String> = LinkedHashSet(),
 ) {
     private var raw: String? = null
@@ -37,6 +40,9 @@ data class DuckConfig(
         o.put(KEY_HOOK_SYSTEM_SERVER, hookSystemServer)
         o.put(KEY_FRAMEWORK_MODE, frameworkMode)
         o.put(KEY_FRAMEWORK_ALL_APPS, frameworkAllApps)
+        o.put(KEY_COVER_ADB_INODE, coverAdbInode)
+        o.put(KEY_COVER_ADB_LISTING, coverAdbListing)
+        o.put(KEY_COVER_ADB_JDWP, coverAdbJdwp)
         o.put(KEY_TARGETS, JSONArray(targets.toList()))
         return o.toString(2)
     }
@@ -55,6 +61,9 @@ data class DuckConfig(
         private const val KEY_HOOK_SYSTEM_SERVER = "hookSystemServer"
         private const val KEY_FRAMEWORK_MODE = "frameworkMode"
         private const val KEY_FRAMEWORK_ALL_APPS = "frameworkAllApps"
+        private const val KEY_COVER_ADB_INODE = "coverAdbInode"
+        private const val KEY_COVER_ADB_LISTING = "coverAdbListing"
+        private const val KEY_COVER_ADB_JDWP = "coverAdbJdwp"
         private const val KEY_TARGETS = "targets"
 
         fun parse(text: String?): DuckConfig {
@@ -78,6 +87,9 @@ data class DuckConfig(
                     hookSystemServer = o.optBoolean(KEY_HOOK_SYSTEM_SERVER, false),
                     frameworkMode = o.optBoolean(KEY_FRAMEWORK_MODE, false),
                     frameworkAllApps = o.optBoolean(KEY_FRAMEWORK_ALL_APPS, false),
+                    coverAdbInode = o.optBoolean(KEY_COVER_ADB_INODE, true),
+                    coverAdbListing = o.optBoolean(KEY_COVER_ADB_LISTING, true),
+                    coverAdbJdwp = o.optBoolean(KEY_COVER_ADB_JDWP, true),
                     targets = targets,
                 ).also { it.raw = text }
             } catch (_: Throwable) {

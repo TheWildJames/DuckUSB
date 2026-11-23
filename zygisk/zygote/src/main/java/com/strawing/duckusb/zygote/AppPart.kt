@@ -28,9 +28,12 @@ object AppPart {
         if (!ModuleConfig.active() || !config.spoofProps) return
         if (packageName == null) return
         if (config.targets.isNotEmpty() && packageName !in config.targets) return
+        if (!config.coverAdbInode && !config.coverAdbListing && !config.coverAdbJdwp) return
         if (!NativeLib.load(ModuleConfig.moduleDir)) return
 
-        val armed = runCatching { Native.installAdbCover() }.getOrElse {
+        val armed = runCatching {
+            Native.installAdbCover(config.coverAdbInode, config.coverAdbListing, config.coverAdbJdwp)
+        }.getOrElse {
             Logx.e("adb runtime cover failed to arm for $packageName", it)
             0
         }

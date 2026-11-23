@@ -186,41 +186,51 @@ bool hook_symbol(const char *symbol, void *replacement, Fn *original) {
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_strawing_duckusb_zygote_hook_Native_installAdbCover(JNIEnv *, jobject) {
+Java_com_strawing_duckusb_zygote_hook_Native_installAdbCover(
+        JNIEnv *, jobject, jboolean cover_inode, jboolean cover_listing, jboolean cover_jdwp) {
     if (g_installed) return 1;
     if (!pin_self()) {
         LOGE("module image could not be pinned (%s), adb cover not armed", pin_self_error());
         return 0;
     }
-    real_dirfd = reinterpret_cast<dirfd_fn>(dlsym(RTLD_DEFAULT, "dirfd"));
 
     int armed = 0;
-    if (hook_symbol("stat", reinterpret_cast<void *>(my_stat), &orig_stat)) armed++;
-    if (hook_symbol("lstat", reinterpret_cast<void *>(my_lstat), &orig_lstat)) armed++;
-    if (hook_symbol("fstatat", reinterpret_cast<void *>(my_fstatat), &orig_fstatat)) armed++;
-    // statx is API 30+; an absent symbol is not an error.
-    hook_symbol("statx", reinterpret_cast<void *>(my_statx), &orig_statx);
-    if (hook_symbol("connect", reinterpret_cast<void *>(my_connect), &orig_connect)) armed++;
 
-    // readdir64 is an alias of readdir on LP64; hook whichever are distinct.
-    void *plain = dlsym(RTLD_DEFAULT, "readdir");
-    void *wide = dlsym(RTLD_DEFAULT, "readdir64");
-    if (wide != nullptr) {
-        orig_readdir = reinterpret_cast<readdir_fn>(plain);
-        if (hook_symbol("readdir64", reinterpret_cast<void *>(my_readdir64), &orig_readdir64)) {
-            armed++;
+    if (cover_inode) {
+        if (hook_symbol("stat", reinterpret_cast<void *>(my_stat), &orig_stat)) armed++;
+        if (hook_symbol("lstat", reinterpret_cast<void *>(my_lstat), &orig_lstat)) armed++;
+        if (hook_symbol("fstatat", reinterpret_cast<void *>(my_fstatat), &orig_fstatat)) armed++;
+        // statx is API 30+; an absent symbol is not an error.
+        hook_symbol("statx", reinterpret_cast<void *>(my_statx), &orig_statx);
+    }
+
+    if (cover_listing) {
+        real_dirfd = reinterpret_cast<dirfd_fn>(dlsym(RTLD_DEFAULT, "dirfd"));
+        // readdir64 is an alias of readdir on LP64; hook whichever are distinct.
+        void *plain = dlsym(RTLD_DEFAULT, "readdir");
+        void *wide = dlsym(RTLD_DEFAULT, "readdir64");
+        if (wide != nullptr) {
+            orig_readdir = reinterpret_cast<readdir_fn>(plain);
+            if (hook_symbol("readdir64", reinterpret_cast<void *>(my_readdir64), &orig_readdir64)) {
+                armed++;
+            }
+        }
+        if (plain != nullptr && plain != wide) {
+            if (hook_symbol("readdir", reinterpret_cast<void *>(my_readdir), &orig_readdir)) armed++;
+        } else if (plain != nullptr && orig_readdir == nullptr) {
+            orig_readdir = orig_readdir64 == nullptr
+                                   ? nullptr
+                                   : reinterpret_cast<readdir_fn>(orig_readdir64);
         }
     }
-    if (plain != nullptr && plain != wide) {
-        if (hook_symbol("readdir", reinterpret_cast<void *>(my_readdir), &orig_readdir)) armed++;
-    } else if (plain != nullptr && orig_readdir == nullptr) {
-        orig_readdir = orig_readdir64 == nullptr
-                               ? nullptr
-                               : reinterpret_cast<readdir_fn>(orig_readdir64);
+
+    if (cover_jdwp) {
+        if (hook_symbol("connect", reinterpret_cast<void *>(my_connect), &orig_connect)) armed++;
     }
 
     if (armed == 0) return 0;
     g_installed = true;
-    LOGD("adb runtime cover armed: %d hooks", armed);
+    LOGD("adb runtime cover armed: %d hooks (inode=%d listing=%d jdwp=%d)", armed, cover_inode,
+         cover_listing, cover_jdwp);
     return armed;
 }

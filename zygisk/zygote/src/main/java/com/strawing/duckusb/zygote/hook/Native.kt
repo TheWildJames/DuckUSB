@@ -12,5 +12,5 @@ object Native {
 
     external fun installPropHooks(names: Array<String>, values: Array<String>): Int
 
-    external fun installAdbCover(): Int
+    external fun installAdbCover(coverInode: Boolean, coverListing: Boolean, coverJdwp: Boolean): Int
 }
